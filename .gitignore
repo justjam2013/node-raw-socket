@@ -1,5 +1,6 @@
 syntax: glob
 build
+.idea
+lib
 node_modules
 npm-debug.log
-package-lock.json

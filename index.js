@@ -1,8 +1,11 @@
 
 var events = require ("events");
 var net = require ("net");
-var raw = require ("./build/Release/raw.node");
 var util = require ("util");
+var path = require ("path");
+var binary = require('@mapbox/node-pre-gyp');
+var bindingPath = binary.find(path.resolve(path.join(__dirname,'./package.json')));
+var raw = require(bindingPath);
 
 function _expandConstantObject (object) {
 	var keys = [];

@@ -1,13 +1,19 @@
 {
-  "name": "raw-socket",
+  "name": "@neuralegion/raw-socket",
   "version": "1.7.0",
   "description": "Raw sockets for Node.js.",
   "main": "index.js",
   "directories": {
     "example": "example"
   },
+  "types": "index.d.ts",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
-    "nan": "2.14.*"
+    "@mapbox/node-pre-gyp": "^1.0.11",
+    "nan": "~2.17.0"
   },
   "contributors": [
     {
@@ -17,11 +23,24 @@
     {
       "name": "NoSpaceships Ltd",
       "email": "hello@nospaceships.com"
+    },
+    {
+      "name": "Artem Derevnjuk",
+      "email": "artem.derevnjuk@neuralegion.com"
     }
   ],
+  "scripts": {
+    "node-pre-gyp": "node-pre-gyp",
+    "semantic-release": "semantic-release",
+    "node-pre-gyp-github": "node-pre-gyp-github",
+    "install": "node-pre-gyp install --fallback-to-build"
+  },
   "repository": {
     "type": "git",
-    "url": "git://github.com/nospaceships/node-raw-socket.git"
+    "url": "git+https://github.com/NeuraLegion/node-raw-socket.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NeuraLegion/node-raw-socket/issues"
   },
   "keywords": [
     "checksum",
@@ -39,5 +58,18 @@
     "sockets"
   ],
   "author": "NoSpaceships Ltd <hello@nospaceships.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "node-pre-gyp-github": "^1.4.4",
+    "semantic-release": "^21.1.1"
+  },
+  "binary": {
+    "module_name": "raw_socket",
+    "module_path": "./lib/binding/{configuration}/{node_abi}-{platform}-{arch}-{libc}/",
+    "package_name": "{module_name}-v{version}-{node_abi}-{platform}-{arch}-{libc}.tar.gz",
+    "host": "https://github.com/NeuraLegion/node-raw-socket/releases/download/",
+    "remote_path": "v{version}"
+  }
 }
