@@ -12,11 +12,11 @@ This module is installed using [node package manager (npm)][npm]:
     # during installation using node-gyp.  A suitable build chain
     # must be configured before installation.
     
-    npm install raw-socket
+    npm install @neuralegion/raw-socket
 
 It is loaded using the `require()` function:
 
-    var raw = require ("raw-socket");
+    var raw = require ("@neuralegion/raw-socket");
 
 Raw sockets can then be created, and data sent using [Node.js][nodejs]
 `Buffer` objects:
