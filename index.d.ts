@@ -60,6 +60,13 @@ export function writeChecksum(
 
 export function createChecksum(...args: Buffer[]): number;
 
+export interface TAddressFamily {
+  IPv4: number;
+  IPv6: number;
+}
+
+export const AddressFamily: TAddressFamily;
+
 export interface TProtocol {
   ICMP: number;
   TCP: number;
