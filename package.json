@@ -3,6 +3,9 @@
   "version": "1.8.3",
   "description": "Raw sockets for Node.js.",
   "main": "index.js",
+  "files": [
+    "patches"
+  ],
   "directories": {
     "example": "example"
   },
@@ -14,7 +17,8 @@
   },
   "dependencies": {
     "nan": "^2.19.0",
-    "node-gyp-build": "^4.8.0"
+    "node-gyp-build": "^4.8.0",
+    "patch-package": "^8.0.0"
   },
   "contributors": [
     {
@@ -34,7 +38,8 @@
     "semantic-release": "semantic-release",
     "build:gyp": "prebuildify --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2",
     "build:gyp-cross": "prebuildify-cross --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2",
-    "install": "node-gyp-build"
+    "install": "node-gyp-build",
+    "postinstall": "patch-package"
   },
   "repository": {
     "type": "git",
@@ -63,8 +68,8 @@
   "devDependencies": {
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "prebuildify": "^5.0.1",
-    "prebuildify-cross": "^5.0.0",
+    "prebuildify": "^6.0.0",
+    "prebuildify-cross": "^5.1.0",
     "semantic-release": "^23.0.8"
   }
 }
