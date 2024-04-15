@@ -16,29 +16,32 @@ jobs:
       matrix:
         include:
           - os: macos-11
+            label: x64+arm64
             node_arch: x64
             command: build:gyp
             args: --arch x64+arm64
           - os: windows-2019
-            node_arch: x86
-            command: build:gyp
-          - os: windows-2019
+            label: x64
             node_arch: x64
             command: build:gyp
           - os: ubuntu-20.04
+            label: alpine
             command: build:gyp-cross
             args: -i centos7-devtoolset7 -i alpine
           - os: ubuntu-20.04
+            label: armv6+armv7
             command: build:gyp-cross
             args: -i linux-arm64-lts -i linux-armv7 -i linux-armv6
           - os: ubuntu-20.04
+            label: musl+arm64-musl
             command: build:gyp-cross
             args: --tag-libc musl -i linux-arm64-musl
           - os: ubuntu-20.04
+            label: arm64+armv7
             command: build:gyp-cross
             args: -i android-arm64 -i android-armv7
     steps:
-      - uses: actions/checkout@v
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_REF }}
           token: ${{ secrets.GPR_TOKEN }}
@@ -56,7 +59,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts-${{ matrix.node_arch }}
+          name: build-artifacts-${{ matrix.os }}-${{ matrix.label }}
           path: prebuilds/
           if-no-files-found: error
 
