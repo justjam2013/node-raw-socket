@@ -21,6 +21,10 @@ jobs:
             command: build:gyp
             args: --arch x64+arm64
           - os: windows-2019
+            label: x86
+            node_arch: x86
+            command: build:gyp
+          - os: windows-2019
             label: x64
             node_arch: x64
             command: build:gyp
