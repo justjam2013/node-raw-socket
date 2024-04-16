@@ -1,6 +1,6 @@
 {
   "name": "@neuralegion/raw-socket",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "description": "Raw sockets for Node.js.",
   "main": "index.js",
   "directories": {
