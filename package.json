@@ -32,8 +32,9 @@
   ],
   "scripts": {
     "semantic-release": "semantic-release",
-    "build:gyp": "prebuildify --napi false --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2 --target 21.7.3 --target 22.11.0",
-    "build:gyp-cross": "prebuildify-cross --napi false --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2 --target 21.7.3 --target 22.11.0",
+    "build:gyp:x86": "prebuildify --napi false --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2 --target 21.7.3 --target 22.11.0",
+    "build:gyp": "prebuildify --napi false --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2 --target 21.7.3 --target 22.11.0 --target 24.0.0",
+    "build:gyp-cross": "prebuildify-cross --napi false --strip --target 10.24.1 --target 12.22.12 --target 14.21.3 --target 16.20.2 --target 18.17.1 --target 19.9.0 --target 20.12.2 --target 21.7.3 --target 22.11.0 --target 24.0.0",
     "install": "node-gyp-build"
   },
   "repository": {
