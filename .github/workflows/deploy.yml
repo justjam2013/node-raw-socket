@@ -15,32 +15,55 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-12
-            label: x64+arm64
+          # Intel Mac
+          - os: macos-13
+            label: x64
             node_arch: x64
             command: build:gyp
-            args: --arch x64+arm64
+            args: --arch x64
+          # Arm64 Mac
+          - os: macos-14
+            label: arm64
+            node_arch: arm64
+            command: build:gyp
+            args: --arch arm64
+          - os: macos-15
+            label: arm64
+            node_arch: arm64
+            command: build:gyp
+            args: --arch arm64
+          # Windows x86
           - os: windows-2019
             label: x86
             node_arch: x86
-            command: build:gyp
+            command: build:gyp:x86
+          # Windows x64
           - os: windows-2019
             label: x64
             node_arch: x64
             command: build:gyp
-          - os: ubuntu-20.04
+          - os: windows-2022
+            label: x64
+            node_arch: x64
+            command: build:gyp
+          - os: windows-2025
+            label: x64
+            node_arch: x64
+            command: build:gyp
+          # Ubuntu 22.04
+          - os: ubuntu-22.04
             label: alpine
             command: build:gyp-cross
             args: -i centos7-devtoolset7 -i alpine
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             label: armv6+armv7
             command: build:gyp-cross
             args: -i linux-arm64-lts -i linux-armv7 -i linux-armv6
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             label: musl+arm64-musl
             command: build:gyp-cross
             args: --tag-libc musl -i linux-arm64-musl
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             label: arm64+armv7
             command: build:gyp-cross
             args: -i android-arm64 -i android-armv7
