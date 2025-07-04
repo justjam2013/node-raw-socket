@@ -13,8 +13,8 @@
     "access": "public"
   },
   "dependencies": {
-    "nan": "^2.22.0",
-    "node-gyp-build": "^4.8.3"
+    "nan": "^2.22.2",
+    "node-gyp-build": "^4.8.4"
   },
   "contributors": [
     {
@@ -61,11 +61,11 @@
   "author": "NoSpaceships Ltd <hello@nospaceships.com>",
   "license": "MIT",
   "devDependencies": {
-    "@semantic-release/exec": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/github": "^11.0.3",
     "prebuildify": "^6.0.1",
     "prebuildify-cross": "^5.1.1",
-    "semantic-release": "^23.0.8"
+    "semantic-release": "^24.2.6"
   },
   "overrides": {
     "prebuildify": {
