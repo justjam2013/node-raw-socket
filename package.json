@@ -1,13 +1,20 @@
 {
-  "name": "raw-socket",
-  "version": "1.8.1",
+  "name": "@justjam2013/raw-socket",
+  "version": "1.0.0",
   "description": "Raw sockets for Node.js.",
+  "author": "NoSpaceships Ltd <hello@nospaceships.com>",
+  "license": "MIT",
   "main": "index.js",
   "directories": {
     "example": "example"
   },
   "dependencies": {
-    "nan": "2.19.*"
+    "nan": "^2.23.1"
+  },
+  "scripts": {
+    "build": "node-gyp rebuild",
+    "clean": "rm -rf build",
+    "release": "npm publish --access public"
   },
   "contributors": [
     {
@@ -21,7 +28,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/nospaceships/node-raw-socket.git"
+    "url": "git://github.com/justjam2013/node-raw-socket.git"
   },
   "keywords": [
     "checksum",
@@ -37,7 +44,5 @@
     "raw-sockets",
     "socket",
     "sockets"
-  ],
-  "author": "NoSpaceships Ltd <hello@nospaceships.com>",
-  "license": "MIT"
+  ]
 }
