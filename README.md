@@ -1,5 +1,8 @@
+# raw-socket
 
-# raw-socket 
+**Note:** This is a fork of [nospaceships/node-raw-socket v1.8.1]() and updates `nan` to the latest version, for compatibility with Node 24. This is a temporary fork created because "overrides" is broken in `npm` v11.6.1 and will not be maintained in the long run.
+
+## <!-- Thin separator line -->
 
 This module implements raw sockets for [Node.js][nodejs].
 
