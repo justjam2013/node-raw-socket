@@ -16,16 +16,6 @@
     "clean": "rm -rf build",
     "release": "npm publish --access public"
   },
-  "contributors": [
-    {
-      "name": "Stephen Vickers",
-      "email": "stephen.vickers@nospaceships.com"
-    },
-    {
-      "name": "NoSpaceships Ltd",
-      "email": "hello@nospaceships.com"
-    }
-  ],
   "repository": {
     "type": "git",
     "url": "git://github.com/justjam2013/node-raw-socket.git"
