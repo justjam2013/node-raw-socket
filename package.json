@@ -1,6 +1,6 @@
 {
   "name": "@justjam2013/raw-socket",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Raw sockets for Node.js.",
   "author": "NoSpaceships Ltd <hello@nospaceships.com>",
   "license": "MIT",
@@ -9,7 +9,7 @@
     "example": "example"
   },
   "dependencies": {
-    "nan": "^2.23.1"
+    "nan": "^2.28.0"
   },
   "scripts": {
     "build": "node-gyp rebuild",
