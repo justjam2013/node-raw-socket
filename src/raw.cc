@@ -102,7 +102,7 @@ NAN_METHOD(CreateChecksum) {
 			return;
 		}
 		unsigned int new_length = Nan::To<Uint32>(info[3]).ToLocalChecked()->Value();
-		if (new_length > length) {
+		if (new_length > length - offset) {
 			Nan::ThrowRangeError("Length argument must be smaller than length of the buffer");
 			return;
 		}
@@ -266,9 +266,9 @@ void SocketWrap::Init (Local<Object> exports) {
 	Nan::Set(exports, Nan::New("SocketWrap").ToLocalChecked(), Nan::GetFunction(tpl).ToLocalChecked());
 }
 
-SocketWrap::SocketWrap () {
-	deconstructing_ = false;
-}
+SocketWrap::SocketWrap () : no_ip_header_(false), family_(AF_INET),
+		protocol_(0), poll_fd_(INVALID_SOCKET), poll_watcher_(NULL),
+		poll_initialised_(false), deconstructing_(false) {}
 
 SocketWrap::~SocketWrap () {
 	deconstructing_ = true;
@@ -292,10 +292,13 @@ NAN_METHOD(SocketWrap::Close) {
 
 void SocketWrap::CloseSocket (void) {
 	if (this->poll_initialised_) {
-		uv_close ((uv_handle_t *) this->poll_watcher_, OnClose);
-		closesocket (this->poll_fd_);
-		this->poll_fd_ = INVALID_SOCKET;
 		this->poll_initialised_ = false;
+		uv_close ((uv_handle_t *) this->poll_watcher_, OnClose);
+		this->poll_watcher_ = NULL;
+		if (this->poll_fd_ != INVALID_SOCKET) {
+			closesocket (this->poll_fd_);
+			this->poll_fd_ = INVALID_SOCKET;
+		}
 	}
 }
 
@@ -325,22 +328,48 @@ int SocketWrap::CreateSocket (void) {
 
 #ifdef _WIN32
 	unsigned long flag = 1;
-	if (ioctlsocket (this->poll_fd_, FIONBIO, &flag) == SOCKET_ERROR)
-		return SOCKET_ERRNO;
+	if (ioctlsocket (this->poll_fd_, FIONBIO, &flag) == SOCKET_ERROR) {
+		int error = SOCKET_ERRNO;
+		closesocket (this->poll_fd_);
+		this->poll_fd_ = INVALID_SOCKET;
+		return error;
+	}
 #else
 	int flag = 1;
-	if ((flag = fcntl (this->poll_fd_, F_GETFL, 0)) == SOCKET_ERROR)
-		return SOCKET_ERRNO;
-	if (fcntl (this->poll_fd_, F_SETFL, flag | O_NONBLOCK) == SOCKET_ERROR)
-		return SOCKET_ERRNO;
+	if ((flag = fcntl (this->poll_fd_, F_GETFL, 0)) == SOCKET_ERROR) {
+		int error = SOCKET_ERRNO;
+		closesocket (this->poll_fd_);
+		this->poll_fd_ = INVALID_SOCKET;
+		return error;
+	}
+	if (fcntl (this->poll_fd_, F_SETFL, flag | O_NONBLOCK) == SOCKET_ERROR) {
+		int error = SOCKET_ERRNO;
+		closesocket (this->poll_fd_);
+		this->poll_fd_ = INVALID_SOCKET;
+		return error;
+	}
 #endif
 
 	poll_watcher_ = new uv_poll_t;
-	uv_poll_init_socket (uv_default_loop (), this->poll_watcher_,
+	int rc = uv_poll_init_socket (uv_default_loop (), this->poll_watcher_,
 			this->poll_fd_);
+	if (rc != 0) {
+		delete this->poll_watcher_;
+		this->poll_watcher_ = NULL;
+		closesocket (this->poll_fd_);
+		this->poll_fd_ = INVALID_SOCKET;
+		return rc;
+	}
 	this->poll_watcher_->data = this;
-	uv_poll_start (this->poll_watcher_, UV_READABLE, IoEvent);
-	
+	rc = uv_poll_start (this->poll_watcher_, UV_READABLE, IoEvent);
+	if (rc != 0) {
+		uv_close ((uv_handle_t *) this->poll_watcher_, OnClose);
+		this->poll_watcher_ = NULL;
+		closesocket (this->poll_fd_);
+		this->poll_fd_ = INVALID_SOCKET;
+		return rc;
+	}
+
 	this->poll_initialised_ = true;
 	
 	return 0;
@@ -420,20 +449,22 @@ void SocketWrap::HandleIOEvent (int status, int revents) {
 		Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
 	} else {
 		Local<Value> args[1];
-		if (revents & UV_READABLE)
+		if (revents & UV_READABLE) {
 			args[0] = Nan::New<String>("recvReady").ToLocalChecked();
-		else
+			Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
+		}
+		if (revents & UV_WRITABLE) {
 			args[0] = Nan::New<String>("sendReady").ToLocalChecked();
-
-		Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
+			Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
+		}
 	}
 }
 
 NAN_METHOD(SocketWrap::New) {
 	Nan::HandleScope scope;
 	
-	SocketWrap* socket = new SocketWrap ();
-	int rc, family = AF_INET;
+	int family = AF_INET;
+	uint32_t protocol;
 	
 	if (info.Length () < 1) {
 		Nan::ThrowError("One argument is required");
@@ -443,9 +474,8 @@ NAN_METHOD(SocketWrap::New) {
 	if (! info[0]->IsUint32 ()) {
 		Nan::ThrowTypeError("Protocol argument must be an unsigned integer");
 		return;
-	} else {
-		socket->protocol_ = Nan::To<Uint32>(info[0]).ToLocalChecked()->Value();
 	}
+	protocol = Nan::To<Uint32>(info[0]).ToLocalChecked()->Value();
 
 	if (info.Length () > 1) {
 		if (! info[1]->IsUint32 ()) {
@@ -457,15 +487,14 @@ NAN_METHOD(SocketWrap::New) {
 		}
 	}
 	
+	SocketWrap* socket = new SocketWrap ();
+	socket->protocol_ = protocol;
 	socket->family_ = family;
-	
-	socket->poll_initialised_ = false;
-	
-	socket->no_ip_header_ = false;
 
-	rc = socket->CreateSocket ();
+	int rc = socket->CreateSocket ();
 	if (rc != 0) {
-		Nan::ThrowError(raw_strerror (rc));
+		delete socket;
+		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
 		return;
 	}
 
@@ -505,8 +534,14 @@ NAN_METHOD(SocketWrap::Pause) {
 
 	if (! socket->deconstructing_ && socket->poll_initialised_) {
 		uv_poll_stop (socket->poll_watcher_);
-		if (events)
-			uv_poll_start (socket->poll_watcher_, events, IoEvent);
+		if (events) {
+			int rc = uv_poll_start (socket->poll_watcher_, events, IoEvent);
+			if (rc != 0) {
+				socket->CloseSocket ();
+				Nan::ThrowError(uv_strerror (rc));
+				return;
+			}
+		}
 	}
 	
 	info.GetReturnValue().Set(info.This());
@@ -550,7 +585,7 @@ NAN_METHOD(SocketWrap::Recv) {
 
 	rc = socket->CreateSocket ();
 	if (rc != 0) {
-		Nan::ThrowError(raw_strerror (errno));
+		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
 		return;
 	}
 
@@ -629,7 +664,7 @@ NAN_METHOD(SocketWrap::Send) {
 
 	rc = socket->CreateSocket ();
 	if (rc != 0) {
-		Nan::ThrowError(raw_strerror (errno));
+		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
 		return;
 	}
 	
