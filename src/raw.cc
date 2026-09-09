@@ -680,15 +680,21 @@ NAN_METHOD(SocketWrap::Send) {
 		return;
 	}
 
+	buffer = Nan::To<Object>(info[0]).ToLocalChecked();
+	offset = Nan::To<Uint32>(info[1]).ToLocalChecked()->Value();
+	length = Nan::To<Uint32>(info[2]).ToLocalChecked()->Value();
+
+	size_t buffer_length = node::Buffer::Length (buffer);
+	if (offset > buffer_length || length > buffer_length - offset) {
+		Nan::ThrowRangeError("Offset and length exceed the bounds of the buffer");
+		return;
+	}
+
 	rc = socket->CreateSocket ();
 	if (rc != 0) {
 		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
 		return;
 	}
-	
-	buffer = Nan::To<Object>(info[0]).ToLocalChecked();
-	offset = Nan::To<Uint32>(info[1]).ToLocalChecked()->Value();
-	length = Nan::To<Uint32>(info[2]).ToLocalChecked()->Value();
 
 	data = node::Buffer::Data (buffer) + offset;
 	
