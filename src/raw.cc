@@ -720,25 +720,22 @@ NAN_METHOD(SocketWrap::Send) {
 	data = node::Buffer::Data (buffer) + offset;
 	
 	if (socket->family_ == AF_INET6) {
-#if UV_VERSION_MAJOR > 0
 		struct sockaddr_in6 addr;
-
-		uv_ip6_addr(*Nan::Utf8String(info[3]), 0, &addr);
-#else
-		String::Utf8String address (args[3]);
-		struct sockaddr_in6 addr = uv_ip6_addr (*address, 0);
-#endif
+		rc = uv_ip6_addr(*Nan::Utf8String(info[3]), 0, &addr);
+		if (rc != 0) {
+			Nan::ThrowError("Invalid IPv6 address");
+			return;
+		}
 		
 		rc = sendto (socket->poll_fd_, data, length, 0,
 				(struct sockaddr *) &addr, sizeof (addr));
 	} else {
-#if UV_VERSION_MAJOR > 0
 		struct sockaddr_in addr;
-		uv_ip4_addr(*Nan::Utf8String(info[3]), 0, &addr);
-#else
-		String::Utf8String address (info[3]);
-		struct sockaddr_in addr = uv_ip4_addr (*address, 0);
-#endif
+		rc = uv_ip4_addr(*Nan::Utf8String(info[3]), 0, &addr);
+		if (rc != 0) {
+			Nan::ThrowError("Invalid IPv4 address");
+			return;
+		}
 
 		rc = sendto (socket->poll_fd_, data, length, 0,
 				(struct sockaddr *) &addr, sizeof (addr));
