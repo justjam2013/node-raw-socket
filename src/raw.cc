@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <limits>
 #include "raw.h"
 
 #ifdef _WIN32
@@ -380,8 +381,8 @@ NAN_METHOD(SocketWrap::GetOption) {
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
 	
-	if (info.Length () < 3) {
-		Nan::ThrowError("Three arguments are required");
+	if (info.Length () < 4) {
+		Nan::ThrowError("Four arguments are required");
 		return;
 	}
 
@@ -414,7 +415,24 @@ NAN_METHOD(SocketWrap::GetOption) {
 		return;
 	}
 
-	len = (SOCKET_LEN_TYPE) node::Buffer::Length (buffer);
+	int32_t requested_length = Nan::To<Int32>(info[3]).ToLocalChecked()->Value();
+	if (requested_length < 0) {
+		Nan::ThrowRangeError("Length argument cannot be negative");
+		return;
+	}
+
+	uint32_t length = (uint32_t) requested_length;
+	if (length > node::Buffer::Length (buffer)) {
+		Nan::ThrowRangeError("Length argument must be smaller than length of the buffer");
+		return;
+	}
+
+	if (length > (uint64_t) std::numeric_limits<SOCKET_LEN_TYPE>::max ()) {
+		Nan::ThrowRangeError("Length argument is too large for this platform");
+		return;
+	}
+
+	len = (SOCKET_LEN_TYPE) length;
 
 	int rc = getsockopt (socket->poll_fd_, level, option,
 			(val ? val : (SOCKET_OPT_TYPE) &ival), &len);

@@ -14,7 +14,7 @@
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "rm -rf build",
-    "test": "node test/create-checksum.js",
+    "test": "node test/create-checksum.js && node test/get-option.js",
     "release": "npm publish --access public"
   },
   "repository": {
