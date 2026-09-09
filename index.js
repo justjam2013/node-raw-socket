@@ -45,13 +45,14 @@ function Socket (options) {
 	this.recvPaused = false;
 	this.sendPaused = true;
 
+	this.addressFamily = (options && options.addressFamily)
+			? options.addressFamily : AddressFamily.IPv4;
+
 	this.wrap = new raw.SocketWrap (
 			((options && options.protocol)
 					? options.protocol
 					: 0),
-			((options && options.addressFamily)
-					? options.addressFamily
-					: AddressFamily.IPv4)
+			this.addressFamily
 		);
 
 	var me = this;
@@ -177,8 +178,9 @@ Socket.prototype.send = function (buffer, offset, length, address,
 		return this;
 	}
 
-	if (! net.isIP (address)) {
-		afterCallback.call (this, new Error ("Invalid IP address '" + address + "'"));
+	var ipVersion = this.addressFamily === AddressFamily.IPv6 ? 6 : 4;
+	if (net.isIP (address) !== ipVersion) {
+		afterCallback.call (this, new Error ("Invalid IPv" + ipVersion + " address"), 0);
 		return this;
 	}
 
