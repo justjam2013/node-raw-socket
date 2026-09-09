@@ -25,11 +25,13 @@ const char* raw_strerror (int code) {
 
 static uint16_t checksum (uint16_t start_with, unsigned char *buffer,
 		size_t length) {
-	unsigned i;
+	size_t i;
 	uint32_t sum = start_with > 0 ? ~start_with & 0xffff : 0;
 
-	for (i = 0; i < (length & ~1U); i += 2) {
-		sum += (uint16_t) ntohs (*((uint16_t *) (buffer + i)));
+	for (i = 0; i < (length & ~(size_t) 1); i += 2) {
+		uint16_t word = ((uint16_t) buffer [i] << 8)
+				| (uint16_t) buffer [i + 1];
+		sum += word;
 		if (sum > 0xffff)
 			sum -= 0xffff;
 	}
