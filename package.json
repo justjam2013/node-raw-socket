@@ -14,7 +14,7 @@
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "rm -rf build",
-    "test": "node test/create-checksum.js && node test/get-option.js",
+    "test": "node test/create-checksum.js && node test/get-option.js && node test/send-buffer-bounds.js",
     "release": "npm publish --access public"
   },
   "repository": {
