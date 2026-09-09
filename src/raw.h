@@ -94,6 +94,7 @@ private:
 	uv_poll_t *poll_watcher_;
 	bool poll_initialised_;
 	
+	bool closed_;
 	bool deconstructing_;
 };
 
