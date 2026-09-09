@@ -514,9 +514,17 @@ NAN_METHOD(SocketWrap::New) {
 		if (! info[1]->IsUint32 ()) {
 			Nan::ThrowTypeError("Address family argument must be an unsigned integer");
 			return;
-		} else {
-			if (Nan::To<Uint32>(info[1]).ToLocalChecked()->Value() == 2)
+		}
+		switch (Nan::To<Uint32>(info[1]).ToLocalChecked()->Value()) {
+			case 1:
+				family = AF_INET;
+				break;
+			case 2:
 				family = AF_INET6;
+				break;
+			default:
+				Nan::ThrowRangeError("Address family must be IPv4 or IPv6");
+				return;
 		}
 	}
 	
