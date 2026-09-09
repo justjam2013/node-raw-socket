@@ -33,10 +33,12 @@ assert.throws(function () {
 			buffer, 5);
 }, /Length argument/);
 
-var shortBuffer = Buffer.alloc(4, 0x5a);
+var optionBuffer = Buffer.alloc(8, 0x5a);
 assert.strictEqual(socket.wrap.getOption(raw.SocketLevel.SOL_SOCKET,
-		raw.SocketOption.SO_RCVBUF, shortBuffer, 2), 2);
-assert.strictEqual(shortBuffer[2], 0x5a);
-assert.strictEqual(shortBuffer[3], 0x5a);
+		raw.SocketOption.SO_RCVBUF, optionBuffer, 4), 4);
+assert.strictEqual(optionBuffer[4], 0x5a);
+assert.strictEqual(optionBuffer[5], 0x5a);
+assert.strictEqual(optionBuffer[6], 0x5a);
+assert.strictEqual(optionBuffer[7], 0x5a);
 
 socket.close();
