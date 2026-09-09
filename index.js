@@ -45,7 +45,7 @@ function Socket (options) {
 	this.recvPaused = false;
 	this.sendPaused = true;
 
-	this.addressFamily = (options && options.addressFamily)
+	this.addressFamily = (options && options.addressFamily !== undefined)
 			? options.addressFamily : AddressFamily.IPv4;
 
 	this.wrap = new raw.SocketWrap (

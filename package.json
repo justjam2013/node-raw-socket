@@ -14,7 +14,7 @@
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "rm -rf build",
-    "test": "node test/create-checksum.js && node test/get-option.js && node test/send-buffer-bounds.js && node test/close-lifecycle.js && node test/send-address-validation.js",
+    "test": "node test/address-family-validation.js && node test/create-checksum.js && node test/get-option.js && node test/send-buffer-bounds.js && node test/close-lifecycle.js && node test/send-address-validation.js",
     "release": "npm publish --access public"
   },
   "repository": {
