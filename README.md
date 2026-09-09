@@ -342,6 +342,22 @@ The `protocol` parameter, or its default value of the constant
 `raw.Protocol.None`, will be specified in the protocol field of each IP
 header.
 
+## socket.close ()
+
+Closes the socket permanently and returns the socket. Create a new socket to
+send or receive again; use pause/resume to temporarily stop watching events.
+Repeated calls are harmless and emit only one `close` event.
+
+After close, `send()` reports `Error("Socket is closed")` to its `afterCallback`
+with zero bytes, like other JavaScript validation errors. Queued sends are
+removed and their `afterCallback`s receive the same error on the next tick;
+their `beforeCallback`s are not run. A send already inside its `beforeCallback`
+is rejected if that callback closes the socket.
+
+Native `send()`/`recv()` and `getOption()`/`setOption()` throw
+`Error("Socket is closed")`. Pause/resume calls after close are harmless no-ops.
+Closing releases the socket's event-loop watcher.
+
 ## socket.on ("close", callback)
 
 The `close` event is emitted by the socket when the underlying raw socket

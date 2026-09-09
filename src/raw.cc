@@ -269,7 +269,7 @@ void SocketWrap::Init (Local<Object> exports) {
 
 SocketWrap::SocketWrap () : no_ip_header_(false), family_(AF_INET),
 		protocol_(0), poll_fd_(INVALID_SOCKET), poll_watcher_(NULL),
-		poll_initialised_(false), deconstructing_(false) {}
+		poll_initialised_(false), closed_(false), deconstructing_(false) {}
 
 SocketWrap::~SocketWrap () {
 	deconstructing_ = true;
@@ -281,6 +281,11 @@ NAN_METHOD(SocketWrap::Close) {
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
 	
+	if (socket->closed_) {
+		info.GetReturnValue().Set(info.This());
+		return;
+	}
+	socket->closed_ = true;
 	socket->CloseSocket ();
 
 	Local<Value> args[1];
@@ -304,6 +309,8 @@ void SocketWrap::CloseSocket (void) {
 }
 
 int SocketWrap::CreateSocket (void) {
+	if (this->closed_ || this->deconstructing_)
+		return UV_EBADF;
 	if (this->poll_initialised_)
 		return 0;
 	
@@ -380,6 +387,10 @@ NAN_METHOD(SocketWrap::GetOption) {
 	Nan::HandleScope scope;
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
+	if (socket->closed_) {
+		Nan::ThrowError("Socket is closed");
+		return;
+	}
 	
 	if (info.Length () < 4) {
 		Nan::ThrowError("Four arguments are required");
@@ -449,6 +460,8 @@ NAN_METHOD(SocketWrap::GetOption) {
 
 void SocketWrap::HandleIOEvent (int status, int revents) {
 	Nan::HandleScope scope;
+	if (closed_ || deconstructing_)
+		return;
 
 	if (status) {
 		Local<Value> args[2];
@@ -471,7 +484,7 @@ void SocketWrap::HandleIOEvent (int status, int revents) {
 			args[0] = Nan::New<String>("recvReady").ToLocalChecked();
 			Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
 		}
-		if (revents & UV_WRITABLE) {
+		if (! closed_ && (revents & UV_WRITABLE)) {
 			args[0] = Nan::New<String>("sendReady").ToLocalChecked();
 			Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
 		}
@@ -569,6 +582,10 @@ NAN_METHOD(SocketWrap::Recv) {
 	Nan::HandleScope scope;
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
+	if (socket->closed_) {
+		Nan::ThrowError("Socket is closed");
+		return;
+	}
 	Local<Object> buffer;
 	sockaddr_in sin_address;
 	sockaddr_in6 sin6_address;
@@ -644,6 +661,10 @@ NAN_METHOD(SocketWrap::Send) {
 	Nan::HandleScope scope;
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
+	if (socket->closed_) {
+		Nan::ThrowError("Socket is closed");
+		return;
+	}
 	Local<Object> buffer;
 	uint32_t offset;
 	uint32_t length;
@@ -741,6 +762,10 @@ NAN_METHOD(SocketWrap::SetOption) {
 	Nan::HandleScope scope;
 	
 	SocketWrap* socket = SocketWrap::Unwrap<SocketWrap> (info.This ());
+	if (socket->closed_) {
+		Nan::ThrowError("Socket is closed");
+		return;
+	}
 	
 	if (info.Length () < 3) {
 		Nan::ThrowError("Three or four arguments are required");

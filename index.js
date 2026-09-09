@@ -37,6 +37,7 @@ function Socket (options) {
 	Socket.super_.call (this);
 
 	this.requests = [];
+	this.closed = false;
 	this.buffer = Buffer.alloc((options && options.bufferSize)
 			? options.bufferSize
 			: 4096);
@@ -72,6 +73,15 @@ Socket.prototype.getOption = function (level, option, value, length) {
 }
 
 Socket.prototype.onClose = function () {
+	this.closed = true;
+	var me = this;
+	var requests = this.requests;
+	this.requests = [];
+	requests.forEach (function (req) {
+		process.nextTick (function () {
+			req.afterCallback.call (me, new Error ("Socket is closed"), 0);
+		});
+	});
 	this.emit ("close");
 }
 
@@ -81,6 +91,8 @@ Socket.prototype.onError = function (error) {
 }
 
 Socket.prototype.onRecvReady = function () {
+	if (this.closed)
+		return;
 	var me = this;
 	try {
 		this.wrap.recv (this.buffer, function (buffer, bytes, source) {
@@ -93,6 +105,8 @@ Socket.prototype.onRecvReady = function () {
 }
 
 Socket.prototype.onSendReady = function () {
+	if (this.closed)
+		return;
 	if (this.requests.length > 0) {
 		var me = this;
 		var req = this.requests.shift ();
@@ -113,24 +127,32 @@ Socket.prototype.onSendReady = function () {
 }
 
 Socket.prototype.pauseRecv = function () {
+	if (this.closed)
+		return this;
 	this.recvPaused = true;
 	this.wrap.pause (this.recvPaused, this.sendPaused);
 	return this;
 }
 
 Socket.prototype.pauseSend = function () {
+	if (this.closed)
+		return this;
 	this.sendPaused = true;
 	this.wrap.pause (this.recvPaused, this.sendPaused);
 	return this;
 }
 
 Socket.prototype.resumeRecv = function () {
+	if (this.closed)
+		return this;
 	this.recvPaused = false;
 	this.wrap.pause (this.recvPaused, this.sendPaused);
 	return this;
 }
 
 Socket.prototype.resumeSend = function () {
+	if (this.closed)
+		return this;
 	this.sendPaused = false;
 	this.wrap.pause (this.recvPaused, this.sendPaused);
 	return this;
@@ -141,6 +163,11 @@ Socket.prototype.send = function (buffer, offset, length, address,
 	if (! afterCallback) {
 		afterCallback = beforeCallback;
 		beforeCallback = null;
+	}
+
+	if (this.closed) {
+		afterCallback.call (this, new Error ("Socket is closed"), 0);
+		return this;
 	}
 
 	if (length + offset > buffer.length)  {
