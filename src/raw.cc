@@ -87,10 +87,20 @@ NAN_METHOD(CreateChecksum) {
 	Local<Object> state_object;
 	if (streaming) {
 		state_object = info[0].As<Object>();
-		state.sum = Nan::To<uint32_t>(Nan::Get(state_object,
-				Nan::New("sum").ToLocalChecked()).ToLocalChecked()).FromMaybe(0) & 0xffff;
-		int pending = Nan::To<int32_t>(Nan::Get(state_object,
-				Nan::New("pending").ToLocalChecked()).ToLocalChecked()).FromMaybe(-1);
+		Local<Value> sum_value, pending_value;
+		if (! Nan::Get(state_object, Nan::New("sum").ToLocalChecked()).ToLocal(&sum_value)
+				|| ! Nan::Get(state_object, Nan::New("pending").ToLocalChecked()).ToLocal(&pending_value))
+			return;
+		if (! sum_value->IsUint32 () || ! pending_value->IsInt32 ()) {
+			Nan::ThrowTypeError("Invalid checksum state");
+			return;
+		}
+		state.sum = Nan::To<uint32_t>(sum_value).FromJust();
+		int pending = Nan::To<int32_t>(pending_value).FromJust();
+		if (state.sum > 65535 || pending < -1 || pending > 255) {
+			Nan::ThrowRangeError("Invalid checksum state");
+			return;
+		}
 		state.has_pending_byte = pending >= 0;
 		state.pending_byte = (unsigned char) pending;
 	} else {

@@ -183,3 +183,16 @@ native.createChecksum(state, Buffer.from([255, 255]));
 assert.deepStrictEqual(state, {sum: 65535, pending: -1});
 native.createChecksum(state, Buffer.from([0, 0]));
 assert.deepStrictEqual(state, {sum: 65535, pending: -1});
+assert.throws(function () {
+	native.createChecksum({sum: 65536, pending: -1}, Buffer.alloc(0));
+}, RangeError);
+assert.throws(function () {
+	native.createChecksum({sum: 0, pending: 256}, Buffer.alloc(0));
+}, RangeError);
+assert.throws(function () {
+	native.createChecksum({}, Buffer.alloc(0));
+}, TypeError);
+var getterError = new Error("state getter");
+assert.throws(function () {
+	native.createChecksum({get sum() { throw getterError; }}, Buffer.alloc(0));
+}, function (error) { return error === getterError; });
