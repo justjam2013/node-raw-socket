@@ -7,7 +7,7 @@ This is a fork of [nospaceships/node-raw-socket v1.8.1](https://github.com/nospa
 This module implements raw sockets for [Node.js][nodejs].
 
 *This module has been created primarily to facilitate implementation of the forked
-[net-ping][@justjam2013/net-ping] module.*
+[net-ping](https://www.npmjs.com/package/@justjam2013/net-ping) module.*
 
 This module is installed using [node package manager (npm)][npm]:
 
