@@ -527,7 +527,7 @@ void SocketWrap::HandleIOEvent (int status, int revents) {
 		sprintf(status_str, "%d", status);
 		args[1] = Nan::Error(status_str);
 
-		Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
+		Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 2, args);
 	} else {
 		Local<Value> args[1];
 		if (revents & UV_READABLE) {
