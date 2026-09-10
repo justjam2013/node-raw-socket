@@ -532,7 +532,9 @@ void SocketWrap::HandleIOEvent (int status, int revents) {
 		Local<Value> args[1];
 		if (revents & UV_READABLE) {
 			args[0] = Nan::New<String>("recvReady").ToLocalChecked();
-			Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args);
+			// Do not dispatch sendReady after a recvReady listener throws.
+			if (Nan::Call(Nan::New<String>("emit").ToLocalChecked(), handle(), 1, args).IsEmpty())
+				return;
 		}
 		if (! closed_ && (revents & UV_WRITABLE)) {
 			args[0] = Nan::New<String>("sendReady").ToLocalChecked();
