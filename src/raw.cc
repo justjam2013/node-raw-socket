@@ -399,13 +399,13 @@ NAN_METHOD(SocketWrap::GetOption) {
 		return;
 	}
 
-	if (! info[0]->IsNumber ()) {
-		Nan::ThrowTypeError("Level argument must be a number");
+	if (! info[0]->IsUint32 ()) {
+		Nan::ThrowTypeError("Level argument must be an unsigned integer");
 		return;
 	}
 
-	if (! info[1]->IsNumber ()) {
-		Nan::ThrowTypeError("Option argument must be a number");
+	if (! info[1]->IsUint32 ()) {
+		Nan::ThrowTypeError("Option argument must be an unsigned integer");
 		return;
 	}
 
@@ -779,13 +779,13 @@ NAN_METHOD(SocketWrap::SetOption) {
 		return;
 	}
 
-	if (! info[0]->IsNumber ()) {
-		Nan::ThrowTypeError("Level argument must be a number");
+	if (! info[0]->IsUint32 ()) {
+		Nan::ThrowTypeError("Level argument must be an unsigned integer");
 		return;
 	}
 
-	if (! info[1]->IsNumber ()) {
-		Nan::ThrowTypeError("Option argument must be a number");
+	if (! info[1]->IsUint32 ()) {
+		Nan::ThrowTypeError("Option argument must be an unsigned integer");
 		return;
 	}
 
