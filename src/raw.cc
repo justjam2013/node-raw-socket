@@ -23,24 +23,36 @@ const char* raw_strerror (int code) {
 #endif
 }
 
-static uint16_t checksum (uint16_t start_with, unsigned char *buffer,
-		size_t length) {
-	size_t i;
-	uint32_t sum = start_with > 0 ? ~start_with & 0xffff : 0;
+struct ChecksumState {
+	uint32_t sum;
+	bool has_pending_byte;
+	unsigned char pending_byte;
+};
 
-	for (i = 0; i < (length & ~(size_t) 1); i += 2) {
-		uint16_t word = ((uint16_t) buffer [i] << 8)
-				| (uint16_t) buffer [i + 1];
-		sum += word;
-		if (sum > 0xffff)
-			sum -= 0xffff;
+static void accumulate_checksum (ChecksumState &state,
+		const unsigned char *buffer, size_t length) {
+	size_t i = 0;
+	if (state.has_pending_byte && length) {
+		state.sum += ((uint16_t) state.pending_byte << 8) | buffer[i++];
+		state.has_pending_byte = false;
+	}
+	for (; i + 1 < length; i += 2) {
+		state.sum += ((uint16_t) buffer[i] << 8) | buffer[i + 1];
+		state.sum = (state.sum & 0xffff) + (state.sum >> 16);
 	}
 	if (i < length) {
-		sum += buffer [i] << 8;
-		if (sum > 0xffff)
-			sum -= 0xffff;
+		state.pending_byte = buffer[i];
+		state.has_pending_byte = true;
 	}
-	
+	state.sum = (state.sum & 0xffff) + (state.sum >> 16);
+}
+
+static uint16_t finalize_checksum (const ChecksumState &state) {
+	uint32_t sum = state.sum;
+	if (state.has_pending_byte)
+		sum += (uint16_t) state.pending_byte << 8;
+	while (sum >> 16)
+		sum = (sum & 0xffff) + (sum >> 16);
 	return ~sum & 0xffff;
 }
 
@@ -65,16 +77,34 @@ NAN_METHOD(CreateChecksum) {
 		return;
 	}
 
-	if (! info[0]->IsUint32 ()) {
-		Nan::ThrowTypeError("Start with argument must be an unsigned integer");
-		return;
-	}
-	
-	uint32_t start_with = Nan::To<Uint32>(info[0]).ToLocalChecked()->Value();
-
-	if (start_with > 65535) {
-		Nan::ThrowRangeError("Start with argument cannot be larger than 65535");
-		return;
+	// Internal streaming calls carry an uncomplemented sum and an optional
+	// high byte. Numeric calls retain the legacy even-aligned API: zero
+	// initializes a checksum; other values are finalized prior checksums.
+	// That legacy API cannot represent arbitrary continuation; the public
+	// wrapper always uses explicit state, including when its sum is zero.
+	ChecksumState state = {0, false, 0};
+	bool streaming = info[0]->IsObject ();
+	Local<Object> state_object;
+	if (streaming) {
+		state_object = info[0].As<Object>();
+		state.sum = Nan::To<uint32_t>(Nan::Get(state_object,
+				Nan::New("sum").ToLocalChecked()).ToLocalChecked()).FromMaybe(0) & 0xffff;
+		int pending = Nan::To<int32_t>(Nan::Get(state_object,
+				Nan::New("pending").ToLocalChecked()).ToLocalChecked()).FromMaybe(-1);
+		state.has_pending_byte = pending >= 0;
+		state.pending_byte = (unsigned char) pending;
+	} else {
+		if (! info[0]->IsUint32 ()) {
+			Nan::ThrowTypeError("Start with argument must be an unsigned integer");
+			return;
+		}
+		uint32_t start_with = Nan::To<uint32_t>(info[0]).FromJust();
+		if (start_with > 65535) {
+			Nan::ThrowRangeError("Start with argument cannot be larger than 65535");
+			return;
+		}
+		if (start_with != 0)
+			state.sum = ~start_with & 0xffff;
 	}
 
 	if (! node::Buffer::HasInstance (info[1])) {
@@ -114,12 +144,17 @@ NAN_METHOD(CreateChecksum) {
 		length = new_length;
 	}
 	
-	uint16_t sum = checksum ((uint16_t) start_with,
+	accumulate_checksum (state,
 			offset ? (unsigned char *) data + offset : (unsigned char *) data,
 			length);
+	if (streaming) {
+		Nan::Set(state_object, Nan::New("sum").ToLocalChecked(), Nan::New(state.sum));
+		Nan::Set(state_object, Nan::New("pending").ToLocalChecked(),
+				Nan::New(state.has_pending_byte ? (int) state.pending_byte : -1));
+		return;
+	}
+	Local<Integer> number = Nan::New<Uint32>(finalize_checksum(state));
 
-	Local<Integer> number = Nan::New<Uint32>(sum);
-	
 	info.GetReturnValue().Set(number);
 }
 

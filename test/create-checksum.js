@@ -100,3 +100,86 @@ assert.throws(function () {
 }, TypeError);
 
 console.log("Checksum regressions passed");
+
+// Known Internet checksum constants, independent of the implementation.
+[
+	[[], 0xffff], [[1], 0xfeff], [[1, 2], 0xfefd],
+	[[1, 2, 3], 0xfbfd], [[0xff, 0xff], 0],
+	[[0xff, 0xff, 0, 0], 0], [[0, 0, 0, 0], 0xffff]
+].forEach(function (vector) {
+	assert.strictEqual(raw.createChecksum(Buffer.from(vector[0])), vector[1]);
+});
+
+var oddPair = [Buffer.from([1]), Buffer.from([2])];
+assert.strictEqual(raw.createChecksum(oddPair), 0xfefd);
+assert.strictEqual(raw.createChecksum.apply(null, oddPair), 0xfefd);
+var zeroContinuation = [Buffer.from([0xff, 0xff]), Buffer.from([0, 0])];
+assert.strictEqual(raw.createChecksum(zeroContinuation), 0);
+assert.strictEqual(raw.createChecksum.apply(null, zeroContinuation), 0);
+assert.strictEqual(raw.createChecksum(zeroContinuation),
+		raw.createChecksum(Buffer.concat(zeroContinuation)));
+
+function checkSegments(segments) {
+	var expected = raw.createChecksum(Buffer.concat(segments));
+	assert.strictEqual(raw.createChecksum(segments), expected);
+	assert.strictEqual(raw.createChecksum.apply(null, segments), expected);
+	// Exercise odd offsets, Buffer views, and range objects with sentinels.
+	var ranges = segments.map(function (segment) {
+		var backing = Buffer.concat([Buffer.from([0xaa, 0xbb]), segment,
+				Buffer.from([0xcc])]);
+		return {buffer: backing.subarray(1), offset: 1, length: segment.length};
+	});
+	assert.strictEqual(raw.createChecksum(ranges), expected);
+	assert.strictEqual(raw.createChecksum.apply(null, ranges), expected);
+}
+
+[
+	[1, 1], [1, 2], [2, 1], [3, 1], [1, 3], [3, 3],
+	[1, 1, 1], [2, 1, 2], [0, 2], [2, 0], [0, 0], [1, 0, 1]
+].forEach(function (lengths) {
+	var position = 0;
+	checkSegments(lengths.map(function (length) {
+		var segment = Buffer.alloc(length);
+		for (var i = 0; i < length; i++)
+			segment[i] = (++position * 37) & 255;
+		return segment;
+	}));
+});
+
+// Fixed-seed segmentation, covering both total parities and many carries.
+var seed = 0x12345678;
+function next() {
+	seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+	return seed;
+}
+[1, 2, 3, 31, 32, 255, 256, 4095, 4096].forEach(function (length) {
+	var bytes = Buffer.alloc(length);
+	for (var i = 0; i < length; i++)
+		bytes[i] = next() >>> 24;
+	for (var trial = 0; trial < 32; trial++) {
+		var segments = [Buffer.alloc(0)];
+		for (var offset = 0; offset < length;) {
+			var end = Math.min(length, offset + 1 + (next() % 19));
+			segments.push(bytes.subarray(offset, end), Buffer.alloc(0));
+			offset = end;
+		}
+		checkSegments(segments);
+	}
+});
+checkSegments(Array.from({length: 4097}, function () { return Buffer.from([255]); }));
+assert.strictEqual(raw.createChecksum(), 0);
+console.log("Checksum continuation regressions passed");
+assert.strictEqual(raw.createChecksum([]), 0xffff);
+// Explicit native state preserves both kinds of zero and pending byte 0.
+var state = {sum: 0, pending: -1};
+native.createChecksum(state, Buffer.from([0]));
+assert.deepStrictEqual(state, {sum: 0, pending: 0});
+native.createChecksum(state, Buffer.alloc(0));
+assert.deepStrictEqual(state, {sum: 0, pending: 0});
+native.createChecksum(state, Buffer.from([1]));
+assert.deepStrictEqual(state, {sum: 1, pending: -1});
+state = {sum: 0, pending: -1};
+native.createChecksum(state, Buffer.from([255, 255]));
+assert.deepStrictEqual(state, {sum: 65535, pending: -1});
+native.createChecksum(state, Buffer.from([0, 0]));
+assert.deepStrictEqual(state, {sum: 65535, pending: -1});
