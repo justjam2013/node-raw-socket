@@ -112,8 +112,8 @@ requests have been processed by the [net-ping][net-ping] module the
 required.
 
 The following example stops the underlying `poll_handle_t` event watcher used
-by a socket from generating writeable events, however since readable events
-will still be watched for the program will not exit immediately:
+by a socket from generating readable events. If writeable events are still
+being watched for, the program will not exit immediately:
 
     if (! socket.recvPaused)
         socket.pauseRecv ();
@@ -195,6 +195,7 @@ the `getOption()` and `setOption()` methods exposed by this module.
 
 The following constants are defined in this object:
 
+ * `SO_BROADCAST`
  * `SO_RCVBUF`
  * `SO_RCVTIMEO`
  * `SO_SNDBUF`
@@ -250,9 +251,15 @@ object which must contain the following attributes:
 The second parameter type provides control over how much of the data in a
 [Node.js][nodejs] `Buffer` object a checksum should be generated for.
 
-When more than one parameter is passed a single checksum is calculated as if
-the data in in all parameters were in a single buffer.  This is useful for
-when calulating checksums for TCP and UDP for example - where a psuedo header
+The buffers or objects can also be passed in a single array:
+
+    raw.createChecksum ([bufferOrObject, bufferOrObject]);
+
+When more than one buffer or object is passed a single checksum is calculated
+as if their data were concatenated into a single byte stream. Segment
+boundaries, including odd-length segments, do not alter the checksum result.
+This is useful for when calulating checksums for TCP and UDP for example -
+where a psuedo header
 must be created and used for checksum calculation.
 
 In this case two buffers can be passed, the first containing the psuedo header
@@ -313,9 +320,7 @@ The `createSocket()` function instantiates and returns an instance of the
     var options = {
         addressFamily: raw.AddressFamily.IPv4,
         protocol: raw.Protocol.None,
-        bufferSize: 4096,
-        generateChecksums: false,
-        checksumOffset: 0
+        bufferSize: 4096
     };
     
     var socket = raw.createSocket (options);
@@ -331,11 +336,6 @@ items:
    consant `raw.Protocol.None`
  * `bufferSize` - Size, in bytes, of the sockets internal receive buffer,
    defaults to 4096
- * `generateChecksums` - Either `true` or `false` to enable or disable the
-   automatic checksum generation feature, defaults to `false`
- * `checksumOffset` - When `generateChecksums` is `true` specifies how many
-   bytes to index into the send buffer to write automatically generated
-   checksums, defaults to `0`
 
 An exception will be thrown if the underlying raw socket could not be created.
 The error will be an instance of the `Error` class.
@@ -376,8 +376,10 @@ closed:
 
 ## socket.on ("error", callback)
 
-The `error` event is emitted by the socket when an error occurs sending or
-receiving data.
+The `error` event is emitted by the socket when receiving data fails or the
+underlying event watcher reports an error. Send errors are passed to the
+`afterCallback` supplied to `send()`. Event watcher errors close the socket
+after the `error` event is emitted.
 
 The following arguments will be passed to the `callback` function:
 
@@ -413,21 +415,6 @@ The following example prints received messages in hexadecimal to the console:
                 + ": " + buffer.toString ("hex"));
     });
 
-## socket.generateChecksums (generate, offset)
-
-The `generateChecksums()` method is used to specify whether automatic checksum
-generation should be performed by the socket.
-
-The `generate` parameter is either `true` or `false` to enable or disable the
-feature.  The optional `offset` parameter specifies how many bytes to index
-into the send buffer when writing the generated checksum to the send buffer.
-
-The following example enables automatic checksum generation at offset 2
-resulting in checksums being written to byte 3 and 4 of the send buffer
-(offsets start from 0, meaning byte 1):
-
-    socket.generateChecksums (true, 2);
-
 ## socket.getOption (level, option, buffer, length)
 
 The `getOption()` method gets a socket option using the operating systems
@@ -437,7 +424,8 @@ The `level` parameter is one of the constants defined in the `raw.SocketLevel`
 object.  The `option` parameter is one of the constants defined in the
 `raw.SocketOption` object.  The `buffer` parameter is a [Node.js][nodejs]
 `Buffer` object where the socket option value will be written.  The `length`
-parameter specifies the size of the `buffer` parameter.
+parameter specifies how many bytes of `buffer` are available for the value
+and must be a non-negative integer no larger than `buffer.length`.
 
 If an error occurs an exception will be thrown, the exception will be an
 instance of the `Error` class.
@@ -450,14 +438,14 @@ The following example retrieves the current value of `IP_TTL` socket option:
     var level = raw.SocketLevel.IPPROTO_IP;
     var option = raw.SocketOption.IP_TTL;
     
-    # IP_TTL is a signed integer on some platforms so a 4 byte buffer is used
-    var buffer = new Buffer (4);
+    // IP_TTL is a signed integer on some platforms so a 4 byte buffer is used
+    var buffer = Buffer.alloc (4);
     
     var written = socket.getOption (level, option, buffer, buffer.length);
     
-    console.log (buffer.toString ("hex"), 0, written);
+    console.log (buffer.toString ("hex", 0, written));
 
-## socket.send (buffer, offset, length, address, beforeCallback, afterCallback)
+## socket.send (buffer, offset, length, address, [beforeCallback], afterCallback)
 
 The `send()` method sends data to a remote host.
 
@@ -519,7 +507,7 @@ after the data has been sent:
 ## socket.setOption (level, option, buffer, length)
 
 The `setOption()` method sets a socket option using the operating systems
-`setsockopt()` function.
+`setsockopt()` function and returns the socket for chaining.
 
 The `level` parameter is one of the constants defined in the `raw.SocketLevel`
 object.  The `option` parameter is one of the constants defined in the
@@ -536,9 +524,9 @@ The following example sets the value of `IP_TTL` socket option to `1`:
     var level = raw.SocketLevel.IPPROTO_IP;
     var option = raw.SocketOption.IP_TTL;
     
-    # IP_TTL is a signed integer on some platforms so a 4 byte buffer is used,
-    # x86 computers use little-endian format so specify bytes reverse order
-    var buffer = new Buffer ([0x01, 0x00, 0x00, 0x00]);
+    // IP_TTL is a signed integer on some platforms so a 4 byte buffer is used,
+    // x86 computers use little-endian format so specify bytes reverse order
+    var buffer = Buffer.from ([0x01, 0x00, 0x00, 0x00]);
     
     socket.setOption (level, option, buffer, buffer.length);
 
