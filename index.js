@@ -97,7 +97,7 @@ Socket.prototype.onRecvReady = function () {
 	var me = this;
 	try {
 		this.wrap.recv (this.buffer, function (buffer, bytes, source) {
-			var newBuffer = buffer.slice (0, bytes);
+			var newBuffer = Buffer.from (buffer.subarray (0, bytes));
 			me.emit ("message", newBuffer, source);
 		});
 	} catch (error) {
