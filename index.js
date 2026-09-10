@@ -111,14 +111,19 @@ Socket.prototype.onSendReady = function () {
 	if (this.requests.length > 0) {
 		var me = this;
 		var req = this.requests.shift ();
+		var sent = false;
 		try {
 			if (req.beforeCallback)
 				req.beforeCallback ();
 			this.wrap.send (req.buffer, req.offset, req.length,
 					req.address, function (bytes) {
+				sent = true;
 				req.afterCallback.call (me, null, bytes);
 			});
 		} catch (error) {
+			// Completion callback exceptions are not send failures.
+			if (sent)
+				throw error;
 			req.afterCallback.call (me, error, 0);
 		}
 	} else {
