@@ -660,7 +660,7 @@ NAN_METHOD(SocketWrap::Recv) {
 #endif
 	
 	if (info.Length () < 2) {
-		Nan::ThrowError("Five arguments are required");
+		Nan::ThrowError("Two arguments are required");
 		return;
 	}
 	
@@ -676,39 +676,58 @@ NAN_METHOD(SocketWrap::Recv) {
 		return;
 	}
 
+	const size_t buffer_length = node::Buffer::Length (buffer);
+#ifdef _WIN32
+	// Winsock takes int; POSIX recvfrom takes size_t without narrowing.
+	if (buffer_length > static_cast<size_t> ((std::numeric_limits<int>::max) ())) {
+		Nan::ThrowRangeError("Buffer length exceeds recvfrom maximum");
+		return;
+	}
+	const int recv_length = static_cast<int> (buffer_length);
+#else
+	const size_t recv_length = buffer_length;
+#endif
+
 	rc = socket->CreateSocket ();
 	if (rc != 0) {
 		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
 		return;
 	}
 
+	decltype (recvfrom (socket->poll_fd_, nullptr, recv_length, 0, nullptr,
+			&sin_length)) received;
 	if (socket->family_ == AF_INET6) {
 		memset (&sin6_address, 0, sizeof (sin6_address));
-		rc = recvfrom (socket->poll_fd_, node::Buffer::Data (buffer),
-				(int) node::Buffer::Length (buffer), 0, (sockaddr *) &sin6_address,
+		received = recvfrom (socket->poll_fd_, node::Buffer::Data (buffer),
+				recv_length, 0, (sockaddr *) &sin6_address,
 				&sin_length);
 	} else {
 		memset (&sin_address, 0, sizeof (sin_address));
-		rc = recvfrom (socket->poll_fd_, node::Buffer::Data (buffer),
-				(int) node::Buffer::Length (buffer), 0, (sockaddr *) &sin_address,
+		received = recvfrom (socket->poll_fd_, node::Buffer::Data (buffer),
+				recv_length, 0, (sockaddr *) &sin_address,
 				&sin_length);
 	}
 	
-	if (rc == SOCKET_ERROR) {
+	if (received == SOCKET_ERROR) {
 		Nan::ThrowError(raw_strerror (SOCKET_ERRNO));
 		return;
 	}
 	
+	int name_rc;
 	if (socket->family_ == AF_INET6)
-		uv_ip6_name (&sin6_address, addr, 50);
+		name_rc = uv_ip6_name (&sin6_address, addr, sizeof (addr));
 	else
-		uv_ip4_name (&sin_address, addr, 50);
+		name_rc = uv_ip4_name (&sin_address, addr, sizeof (addr));
+	if (name_rc != 0) {
+		Nan::ThrowError(uv_strerror (name_rc));
+		return;
+	}
 	
 	Local<Function> cb = Local<Function>::Cast (info[1]);
 	const unsigned argc = 3;
 	Local<Value> argv[argc];
 	argv[0] = info[0];
-	argv[1] = Nan::New<Number>(rc);
+	argv[1] = Nan::New<Number>(received);
 	argv[2] = Nan::New(addr).ToLocalChecked();
 	Nan::Call(Nan::Callback(cb), argc, argv);
 	
