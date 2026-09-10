@@ -1,6 +1,8 @@
 # raw-socket
 
-This is a fork of [nospaceships/node-raw-socket v1.8.1](https://github.com/nospaceships/node-raw-socket) and updates `nan` to the latest version, for compatibility with Node 24. This fork was created because "overrides" is broken in `npm` v11.6.1 and only for supporting my Homebridge plugin.
+This is a fork of [nospaceships/node-raw-socket v1.8.1](https://github.com/nospaceships/node-raw-socket) and updates `nan` to the latest version, for compatibility with Node 24. This fork was created because "overrides" is broken in `npm` v11.6.1.
+
+It was originally forked only for supporting my Homebridge plugin, but it is being updated for use beyond that.
 
 ## <!-- Thin separator line -->
 
