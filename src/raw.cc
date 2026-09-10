@@ -84,7 +84,7 @@ NAN_METHOD(CreateChecksum) {
 	
 	Local<Object> buffer = Nan::To<Object>(info[1]).ToLocalChecked();
 	char *data = node::Buffer::Data (buffer);
-	size_t length = node::Buffer::Length (buffer);
+	size_t buffer_length = node::Buffer::Length (buffer);
 	unsigned int offset = 0;
 	
 	if (info.Length () > 2) {
@@ -93,19 +93,21 @@ NAN_METHOD(CreateChecksum) {
 			return;
 		}
 		offset = Nan::To<Uint32>(info[2]).ToLocalChecked()->Value();
-		if (offset >= length) {
-			Nan::ThrowRangeError("Offset argument must be smaller than length of the buffer");
+		if (offset > buffer_length) {
+			Nan::ThrowRangeError("Offset argument must not exceed length of the buffer");
 			return;
 		}
 	}
 	
+	size_t length = buffer_length - offset;
+
 	if (info.Length () > 3) {
 		if (! info[3]->IsUint32 ()) {
 			Nan::ThrowTypeError("Length argument must be an unsigned integer");
 			return;
 		}
 		unsigned int new_length = Nan::To<Uint32>(info[3]).ToLocalChecked()->Value();
-		if (new_length > length - offset) {
+		if (new_length > length) {
 			Nan::ThrowRangeError("Length argument must be smaller than length of the buffer");
 			return;
 		}
@@ -113,7 +115,8 @@ NAN_METHOD(CreateChecksum) {
 	}
 	
 	uint16_t sum = checksum ((uint16_t) start_with,
-			(unsigned char *) data + offset, length);
+			offset ? (unsigned char *) data + offset : (unsigned char *) data,
+			length);
 
 	Local<Integer> number = Nan::New<Uint32>(sum);
 	

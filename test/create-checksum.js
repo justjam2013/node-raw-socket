@@ -43,3 +43,60 @@ assert.strictEqual(raw.createChecksum(
 assert.strictEqual(raw.createChecksum(
 		{buffer: offsetBuffer, offset: 1, length: 4},
 		{buffer: continuation, offset: 1, length: 3}), 0x1e96);
+// Omitted native length covers only the bytes remaining after offset.
+var rangeBuffer = Buffer.from([0x01, 0x02, 0x03, 0x04]);
+assert.strictEqual(native.createChecksum(0, rangeBuffer), 0xfbf9);
+[
+	{offset: 2, expected: 0xfcfb}, // 0x0304
+	{offset: 1, expected: 0xf9fc}  // 0x0203 + 0x0400
+].forEach(function (vector) {
+	assert.strictEqual(native.createChecksum(0, rangeBuffer, vector.offset),
+			vector.expected);
+	assert.strictEqual(native.createChecksum(0, rangeBuffer, vector.offset),
+			native.createChecksum(0, rangeBuffer, vector.offset,
+					rangeBuffer.length - vector.offset));
+	assert.strictEqual(raw.createChecksum({buffer: rangeBuffer,
+			offset: vector.offset, length: rangeBuffer.length - vector.offset}),
+			vector.expected);
+});
+
+// The old omitted-length path consumed the sentinel beyond this Buffer view.
+var backing = Buffer.from([0xaa, 0x01, 0x02, 0x03, 0xbb]);
+var view = backing.subarray(1, 4);
+assert.strictEqual(native.createChecksum(0, view, 1), 0xfdfc); // Only 0x0203.
+backing[4] = 0xcc;
+assert.strictEqual(native.createChecksum(0, view, 1), 0xfdfc);
+
+// Exact-end offsets and empty Buffers describe valid empty ranges.
+[rangeBuffer, Buffer.alloc(0)].forEach(function (emptyRangeBuffer) {
+	assert.strictEqual(native.createChecksum(0, emptyRangeBuffer,
+			emptyRangeBuffer.length), 0xffff);
+	assert.strictEqual(native.createChecksum(0, emptyRangeBuffer,
+			emptyRangeBuffer.length, 0), 0xffff);
+	assert.strictEqual(raw.createChecksum({buffer: emptyRangeBuffer,
+			offset: emptyRangeBuffer.length, length: 0}), 0xffff);
+});
+assert.strictEqual(native.createChecksum(0, Buffer.alloc(0)), 0xffff);
+assert.strictEqual(raw.createChecksum(Buffer.alloc(0)), 0xffff);
+assert.strictEqual(native.createChecksum(0, rangeBuffer, 1, 0), 0xffff);
+
+[
+	[5], [5, 0], [0xffffffff], [0xffffffff, 0],
+	[4, 1], [3, 2], [0, 0xffffffff], [3, 0xffffffff]
+].forEach(function (range) {
+	assert.throws(function () {
+		native.createChecksum.apply(null, [0, rangeBuffer].concat(range));
+	}, function (error) {
+		return error instanceof RangeError && /^(Offset|Length) argument/.test(error.message);
+	}, "native checksum range " + range);
+});
+
+// Explicit undefined arguments remain type errors, not omitted arguments.
+assert.throws(function () {
+	native.createChecksum(0, rangeBuffer, undefined);
+}, TypeError);
+assert.throws(function () {
+	native.createChecksum(0, rangeBuffer, 0, undefined);
+}, TypeError);
+
+console.log("Checksum regressions passed");
