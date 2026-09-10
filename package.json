@@ -11,6 +11,9 @@
   "dependencies": {
     "nan": "^2.28.0"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "rm -rf build",
