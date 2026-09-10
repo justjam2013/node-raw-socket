@@ -2,7 +2,7 @@
   "name": "@justjam2013/raw-socket",
   "version": "1.0.1",
   "description": "Raw sockets for Node.js.",
-  "author": "NoSpaceships Ltd <hello@nospaceships.com>",
+  "author": "justjam2013",
   "license": "MIT",
   "main": "index.js",
   "directories": {
@@ -35,5 +35,15 @@
     "raw-sockets",
     "socket",
     "sockets"
+  ],
+  "contributors": [
+    {
+      "name": "Stephen Vickers",
+      "email": "stephen.vickers@nospaceships.com"
+    },
+    {
+      "name": "NoSpaceships Ltd",
+      "email": "hello@nospaceships.com"
+    }
   ]
 }
