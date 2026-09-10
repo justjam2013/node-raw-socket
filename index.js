@@ -216,17 +216,25 @@ Socket.prototype.setOption = function (level, option, value, length) {
 }
 
 exports.createChecksum = function () {
-	var sum = 0;
-	for (var i = 0; i < arguments.length; i++) {
-		var object = arguments[i];
+	var buffers = arguments.length === 1 && Array.isArray(arguments[0])
+			? arguments[0] : arguments;
+	// pending is -1 when aligned, otherwise the unpaired high-order byte.
+	var state = {sum: 0, pending: -1};
+	for (var i = 0; i < buffers.length; i++) {
+		var object = buffers[i];
 		if (object instanceof Buffer) {
-			sum = raw.createChecksum (sum, object, 0, object.length);
+			raw.createChecksum (state, object, 0, object.length);
 		} else {
-			sum = raw.createChecksum (sum, object.buffer, object.offset,
+			raw.createChecksum (state, object.buffer, object.offset,
 					object.length);
 		}
 	}
-	return sum;
+	if (! arguments.length)
+		return 0; // Preserve the no-argument result.
+	var sum = state.sum + (state.pending < 0 ? 0 : state.pending << 8);
+	while (sum >>> 16)
+		sum = (sum & 0xffff) + (sum >>> 16);
+	return ~sum & 0xffff;
 }
 
 exports.writeChecksum = function (buffer, offset, checksum) {
