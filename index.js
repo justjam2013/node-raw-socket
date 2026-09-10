@@ -218,6 +218,7 @@ Socket.prototype.setOption = function (level, option, value, length) {
 		this.wrap.setOption (level, option, value, length);
 	else
 		this.wrap.setOption (level, option, value);
+	return this;
 }
 
 exports.createChecksum = function () {
