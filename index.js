@@ -171,10 +171,18 @@ Socket.prototype.send = function (buffer, offset, length, address,
 		return this;
 	}
 
-	if (length + offset > buffer.length)  {
-		afterCallback.call (this, new Error ("Buffer length '" + buffer.length
-				+ "' is not large enough for the specified offset '" + offset
-				+ "' plus length '" + length + "'"));
+	if (! Number.isInteger (offset) || offset < 0) {
+		afterCallback.call (this, new Error ("Offset must be a non-negative integer"), 0);
+		return this;
+	}
+
+	if (! Number.isInteger (length) || length < 0) {
+		afterCallback.call (this, new Error ("Length must be a non-negative integer"), 0);
+		return this;
+	}
+
+	if (offset > buffer.length || length > buffer.length - offset) {
+		afterCallback.call (this, new Error ("Offset and length exceed the bounds of the buffer"), 0);
 		return this;
 	}
 

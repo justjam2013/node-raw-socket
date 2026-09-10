@@ -476,6 +476,14 @@ be passed to the `afterCallback` function:
  * `error` - Instance of the `Error` class, or `null` if no error occurred
  * `bytes` - Number of bytes sent
 
+`offset` and `length` are required non-negative integers within `buffer` bounds;
+`length` must not exceed `buffer.length - offset`. Zero-length sends are valid,
+including when `offset === buffer.length`. Validation checks the closed state
+first, then offset, length and bounds, then the address family. Invalid byte
+counts are reported synchronously through `afterCallback` with an error and
+zero bytes, with `this` bound to the socket. They are not queued, do not invoke
+`beforeCallback`, and do not reach the native send. `send()` returns the socket.
+
 The following example sends a ICMP ping message to a remote host, before the
 request is actually sent the IP header TTL is modified, and modified again
 after the data has been sent:
