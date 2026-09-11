@@ -544,6 +544,11 @@ void SocketWrap::HandleIOEvent (int status, int revents) {
 }
 
 NAN_METHOD(SocketWrap::New) {
+	if (! info.IsConstructCall ()) {
+		Nan::ThrowTypeError("SocketWrap constructor must be called with new");
+		return;
+	}
+
 	Nan::HandleScope scope;
 	
 	int family = AF_INET;
