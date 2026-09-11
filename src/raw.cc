@@ -559,6 +559,10 @@ NAN_METHOD(SocketWrap::New) {
 		return;
 	}
 	protocol = Nan::To<Uint32>(info[0]).ToLocalChecked()->Value();
+	if (protocol > static_cast<uint32_t> ((std::numeric_limits<int>::max) ())) {
+		Nan::ThrowRangeError("Protocol argument is too large for this platform");
+		return;
+	}
 
 	if (info.Length () > 1) {
 		if (! info[1]->IsUint32 ()) {
@@ -579,7 +583,7 @@ NAN_METHOD(SocketWrap::New) {
 	}
 	
 	SocketWrap* socket = new SocketWrap ();
-	socket->protocol_ = protocol;
+	socket->protocol_ = static_cast<int> (protocol);
 	socket->family_ = family;
 
 	int rc = socket->CreateSocket ();
@@ -790,6 +794,17 @@ NAN_METHOD(SocketWrap::Send) {
 		return;
 	}
 
+#ifdef _WIN32
+	// Winsock takes int; POSIX sendto takes size_t without narrowing.
+	if (length > static_cast<uint32_t> ((std::numeric_limits<int>::max) ())) {
+		Nan::ThrowRangeError("Length argument exceeds sendto maximum");
+		return;
+	}
+	const int send_length = static_cast<int> (length);
+#else
+	const size_t send_length = length;
+#endif
+
 	rc = socket->CreateSocket ();
 	if (rc != 0) {
 		Nan::ThrowError(rc < 0 ? uv_strerror (rc) : raw_strerror (rc));
@@ -798,6 +813,7 @@ NAN_METHOD(SocketWrap::Send) {
 
 	data = node::Buffer::Data (buffer) + offset;
 	
+	decltype (sendto (socket->poll_fd_, nullptr, send_length, 0, nullptr, 0)) sent;
 	if (socket->family_ == AF_INET6) {
 		struct sockaddr_in6 addr;
 		rc = uv_ip6_addr(*Nan::Utf8String(info[3]), 0, &addr);
@@ -806,7 +822,7 @@ NAN_METHOD(SocketWrap::Send) {
 			return;
 		}
 		
-		rc = sendto (socket->poll_fd_, data, length, 0,
+		sent = sendto (socket->poll_fd_, data, send_length, 0,
 				(struct sockaddr *) &addr, sizeof (addr));
 	} else {
 		struct sockaddr_in addr;
@@ -816,11 +832,11 @@ NAN_METHOD(SocketWrap::Send) {
 			return;
 		}
 
-		rc = sendto (socket->poll_fd_, data, length, 0,
+		sent = sendto (socket->poll_fd_, data, send_length, 0,
 				(struct sockaddr *) &addr, sizeof (addr));
 	}
 	
-	if (rc == SOCKET_ERROR) {
+	if (sent == SOCKET_ERROR) {
 		Nan::ThrowError(raw_strerror (SOCKET_ERRNO));
 		return;
 	}
@@ -828,7 +844,7 @@ NAN_METHOD(SocketWrap::Send) {
 	Local<Function> cb = Local<Function>::Cast (info[4]);
 	const unsigned argc = 1;
 	Local<Value> argv[argc];
-	argv[0] = Nan::New<Number>(rc);
+	argv[0] = Nan::New<Number>(sent);
 	Nan::Call(Nan::Callback(cb), argc, argv);
 	
 	info.GetReturnValue().Set(info.This());

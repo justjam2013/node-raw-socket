@@ -87,8 +87,8 @@ private:
 
 	bool no_ip_header_;
 
-	uint32_t family_;
-	uint32_t protocol_;
+	int family_;
+	int protocol_;
 
 	SOCKET poll_fd_;
 	uv_poll_t *poll_watcher_;
