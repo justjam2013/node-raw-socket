@@ -12,7 +12,7 @@ this module with each major (and some minor) versions of Node.
 This module implements raw sockets for [Node.js][nodejs].
 
 *This module was originally created to facilitate implementation of the forked
-[net-ping](https://www.npmjs.com/package/@justjam2013/net-ping) module.*
+[@justjam2013/net-ping](https://www.npmjs.com/package/@justjam2013/net-ping) module.*
 
 This module is installed using [node package manager (npm)][npm]:
 
