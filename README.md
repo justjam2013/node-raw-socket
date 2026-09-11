@@ -2,7 +2,7 @@
 
 This is a fork of [nospaceships/node-raw-socket v1.8.1](https://github.com/nospaceships/node-raw-socket), which appears to either be abandoned, or was never intended for widespread use. This fork was originally intended only for supporting my Homebridge plugin by updating `nan` to the latest version, for compatibility with Node 24, as "overrides" is broken in `npm` v11.6.1.
 
-Version 1.1.0  updates this module for general use, not just my Homebridge plugin.
+Version 1.1.0 will update this module for general use, not just my Homebridge plugin.
 
 Version 1.2.0 will update the architecture from NAN/V8 to the stable N-API architecture, reducing the requirement for rebuilding
 this module with each major (and some minor) versions of Node.
