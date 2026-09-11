@@ -599,7 +599,7 @@ NAN_METHOD(SocketWrap::New) {
 }
 
 void SocketWrap::OnClose (uv_handle_t *handle) {
-	delete handle;
+	delete reinterpret_cast<uv_poll_t *> (handle);
 }
 
 NAN_METHOD(SocketWrap::Pause) {
