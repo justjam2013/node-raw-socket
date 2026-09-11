@@ -21,7 +21,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
-      - run: npm ci
+      - run: npm install --package-lock=false
       - run: npm run build
       - run: npm test
 
