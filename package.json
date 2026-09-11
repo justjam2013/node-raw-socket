@@ -17,7 +17,7 @@
   "scripts": {
     "build": "node-gyp rebuild",
     "clean": "rm -rf build",
-    "test": "node test/expand-constant-global.js && node test/address-family-validation.js && node test/create-checksum.js && node test/get-option.js && node test/option-validation.js && node test/set-option.js && node test/send-buffer-bounds.js && node test/send-argument-validation.js && node test/close-lifecycle.js && node test/send-address-validation.js && node test/receive-buffer-ownership.js && node test/send-callback-exception.js && node test/poll-error.js && node test/recv-validation.js && node test/native-event-exceptions.js",
+    "test": "node test/expand-constant-global.js && node test/address-family-validation.js && node test/protocol-validation.js && node test/send-length-portability.js && node test/create-checksum.js && node test/get-option.js && node test/option-validation.js && node test/set-option.js && node test/send-buffer-bounds.js && node test/send-argument-validation.js && node test/close-lifecycle.js && node test/send-address-validation.js && node test/receive-buffer-ownership.js && node test/send-callback-exception.js && node test/poll-error.js && node test/recv-validation.js && node test/native-event-exceptions.js",
     "release": "npm publish --access public"
   },
   "repository": {

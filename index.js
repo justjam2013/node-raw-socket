@@ -49,7 +49,7 @@ function Socket (options) {
 			? options.addressFamily : AddressFamily.IPv4;
 
 	this.wrap = new raw.SocketWrap (
-			((options && options.protocol)
+			((options && options.protocol !== undefined)
 					? options.protocol
 					: 0),
 			this.addressFamily
