@@ -939,7 +939,17 @@ NAN_METHOD(SocketWrap::SetOption) {
 }
 
 static void IoEvent (uv_poll_t* watcher, int status, int revents) {
+	Nan::HandleScope handle_scope;
 	SocketWrap *socket = static_cast<SocketWrap*>(watcher->data);
+	Local<Object> object = socket->handle();
+	Local<Context> context;
+	if (! object->GetCreationContext().ToLocal(&context))
+		return;
+	Context::Scope context_scope(context);
+	// This is a top-level libuv entry, with no Node async resource identity.
+	// Keep one scope around both readiness events so task queues run only
+	// after synchronous dispatch finishes; Node also owns uncaught errors.
+	node::CallbackScope callback_scope(Isolate::GetCurrent(), object, {0, 0});
 	socket->HandleIOEvent (status, revents);
 }
 

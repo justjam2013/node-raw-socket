@@ -29,9 +29,11 @@ NAN_METHOD(Dispatch) {
     p->timer.data = p;
     uv_timer_start(&p->timer, Fire, 0, 0);
   } else {
-    uv_poll_t watcher;
-    watcher.data = Nan::ObjectWrap::Unwrap<raw::SocketWrap>(object);
-    raw::IoEvent(&watcher, status, events);
+    // Synchronous native calls already have a JS caller. IoEvent is exclusively
+    // the asynchronous boundary; test synchronous exception propagation through
+    // the same handler without pretending this call came from libuv.
+    auto socket = Nan::ObjectWrap::Unwrap<raw::SocketWrap>(object);
+    socket->HandleIOEvent(status, events);
   }
 }
 NAN_MODULE_INIT(InitHarness) {
