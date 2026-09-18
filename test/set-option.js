@@ -38,7 +38,7 @@ try {
 	socket = raw.createSocket({protocol: raw.Protocol.ICMP});
 } catch (error) {
 	if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-		console.log("SKIP native public setOption: construction requires privileges (" + error.message + ")");
+		console.log("SKIP optional privileged raw-socket: native public setOption: construction requires privileges (" + error.message + ")");
 		process.exit(0);
 	}
 	throw error;

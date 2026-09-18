@@ -1,7 +1,10 @@
 name: Build
 
 on:
-  push
+  push:
+  pull_request:
+    branches:
+      - latest
 
 jobs:
   build:
@@ -26,7 +29,7 @@ jobs:
       - name: Build the project
         run: npm run build
 
-      - name: Run regression tests
+      - name: Run comprehensive tests (required integration included)
         run: npm test
 
       - name: List, audit, fix outdated dependencies and build again
@@ -36,3 +39,6 @@ jobs:
           npm audit fix || true
           npm list --outdated
           npm run build
+
+      - name: Retest after dependency audit mutation
+        run: npm test

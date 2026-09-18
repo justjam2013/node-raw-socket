@@ -24,7 +24,7 @@ if (!process.env.RAW_CLOSE_CHILD) {
 		var socket = create();
 	} catch (error) {
 		if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-			console.log("SKIP close lifecycle: socket construction requires privileges");
+			console.log("SKIP optional privileged raw-socket: close lifecycle: socket construction requires privileges");
 			process.exit(0);
 		}
 		throw error;

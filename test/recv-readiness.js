@@ -35,15 +35,7 @@ try {
 		.replace(/uv_poll_start \(/g, "Restart ("));
 	fs.writeFileSync(path.join(directory, "raw.h"), fs.readFileSync(path.join(__dirname, "../src/raw.h"), "utf8").replace("private:", "public:"));
 	fs.copyFileSync(path.join(__dirname, "fixtures/recv-readiness.cc"), path.join(directory, "harness.cc"));
-	fs.writeFileSync(path.join(directory, "binding.gyp"), JSON.stringify({ targets: [{
-		target_name: "harness", sources: ["harness.cc"],
-		include_dirs: [path.dirname(require.resolve("nan/package.json"))],
-		conditions: [['OS=="win"', { libraries: ["ws2_32.lib"] }]]
-	}] }));
-	var build = child.spawnSync(process.platform === "win32" ? "node-gyp.cmd" : "node-gyp",
-		["rebuild", "--directory", directory], { encoding: "utf8", shell: process.platform === "win32" });
-	assert.strictEqual(build.status, 0, String(build.error || "") + build.stdout + build.stderr);
-	var addon = path.join(directory, "build/Release/harness.node");
+	var addon = require("./helpers/build-addon")(directory);
 	(process.argv[2] === "before" ? ["before"] : ["again", "wouldblock", "genuine"]).forEach(function (scenario) {
 		var run = child.spawnSync(process.execPath,
 			[path.join(__dirname, "fixtures/recv-readiness.js"), addon, scenario],

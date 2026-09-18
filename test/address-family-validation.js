@@ -34,7 +34,7 @@ function checkConstruction (label, construct, family) {
 		socket = construct();
 	} catch (error) {
 		if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-			console.log("SKIP " + label + ": construction requires privileges (" + error.message + ")");
+			console.log("SKIP optional privileged raw-socket: " + label + ": construction requires privileges (" + error.message + ")");
 			return;
 		}
 		throw error;
