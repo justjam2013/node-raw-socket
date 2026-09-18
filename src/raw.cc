@@ -319,7 +319,7 @@ void SocketWrap::Init (Local<Object> exports) {
 
 SocketWrap::SocketWrap () : no_ip_header_(false), family_(AF_INET),
 		protocol_(0), poll_fd_(INVALID_SOCKET), poll_watcher_(NULL),
-		poll_initialised_(false), closed_(false), deconstructing_(false) {}
+		poll_initialised_(false), poll_error_(0), closed_(false), deconstructing_(false) {}
 
 SocketWrap::~SocketWrap () {
 	deconstructing_ = true;
@@ -359,6 +359,8 @@ void SocketWrap::CloseSocket (void) {
 }
 
 int SocketWrap::CreateSocket (void) {
+	if (this->poll_error_)
+		return this->poll_error_;
 	if (this->closed_ || this->deconstructing_)
 		return UV_EBADF;
 	if (this->poll_initialised_)
@@ -637,8 +639,10 @@ NAN_METHOD(SocketWrap::Pause) {
 		if (events) {
 			int rc = uv_poll_start (socket->poll_watcher_, events, IoEvent);
 			if (rc != 0) {
+				// A failed restart is terminal, including during error listeners.
+				socket->poll_error_ = rc;
 				socket->CloseSocket ();
-				Nan::ThrowError(uv_strerror (rc));
+				socket->HandleIOEvent (rc, 0);
 				return;
 			}
 		}

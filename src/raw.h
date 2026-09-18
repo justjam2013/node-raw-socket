@@ -93,6 +93,7 @@ private:
 	SOCKET poll_fd_;
 	uv_poll_t *poll_watcher_;
 	bool poll_initialised_;
+	int poll_error_;
 	
 	bool closed_;
 	bool deconstructing_;

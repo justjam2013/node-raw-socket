@@ -87,8 +87,11 @@ Socket.prototype.onClose = function () {
 }
 
 Socket.prototype.onError = function (error) {
-	this.emit ("error", error);
-	this.close ();
+	try {
+		this.emit ("error", error);
+	} finally {
+		this.close ();
+	}
 }
 
 Socket.prototype.onRecvReady = function () {
