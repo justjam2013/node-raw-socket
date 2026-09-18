@@ -6,7 +6,8 @@ require.cache[require.resolve('../../build/Release/raw.node')] = {exports: addon
 const raw = require('../..');
 const tick = () => new Promise(resolve => setImmediate(resolve));
 const delay = () => new Promise(resolve => setTimeout(resolve, 20));
-const watchdog = setTimeout(() => { throw new Error('required integration timed out'); }, 10000);
+let phase = 'construction';
+const watchdog = setTimeout(() => { throw new Error('required integration timed out during ' + phase + ': ' + JSON.stringify(addon.state())); }, 10000);
 
 (async () => {
   assert.throws(() => addon.SocketWrap(0), {name: 'TypeError', message: 'SocketWrap constructor must be called with new'});
@@ -24,6 +25,7 @@ const watchdog = setTimeout(() => { throw new Error('required integration timed 
   s.pauseRecv().pauseSend();
   assert.strictEqual(addon.state(s.wrap).active, false);
   const peer = dgram.createSocket('udp4');
+  phase = 'peer bind';
   peer.bind(0, '127.0.0.1'); await once(peer, 'listening');
   addon.peer(peer.address().port);
   const retained = [];
@@ -32,12 +34,15 @@ const watchdog = setTimeout(() => { throw new Error('required integration timed 
     retained.push(buffer);
   });
   const sendToWrapper = bytes => new Promise((resolve, reject) => peer.send(bytes, addon.state(s.wrap).port, '127.0.0.1', error => error ? reject(error) : resolve()));
+  phase = 'paused packet';
   await sendToWrapper(Buffer.from([0, 1, 254, 255]));
   await delay();
   assert.strictEqual(retained.length, 0, 'paused receive must not deliver');
   const received = once(s, 'message');
+  phase = 'first receive';
   s.resumeRecv(); await received;
   assert.deepStrictEqual(retained[0], Buffer.from([0, 1, 254, 255]));
+  phase = 'second receive';
   const second = once(s, 'message');
   await sendToWrapper(Buffer.from('second packet')); await second;
   s.buffer.fill(0);
@@ -45,6 +50,7 @@ const watchdog = setTimeout(() => { throw new Error('required integration timed 
   assert.strictEqual(retained[1].toString(), 'second packet');
   assert.notStrictEqual(retained[0].buffer, s.buffer.buffer);
 
+  phase = 'send';
   const order = [];
   const arrived = once(peer, 'message');
   const payload = Buffer.from('!production send!');
@@ -70,6 +76,7 @@ const watchdog = setTimeout(() => { throw new Error('required integration timed 
 
   // Read/write co-occurrence varies by poll backend. Inject the event bits,
   // separately from the real readable and writable callbacks above.
+  phase = 'combined and error';
   const both = raw.createSocket({protocol: raw.Protocol.UDP, bufferSize: 32});
   assert.strictEqual(both.buffer.length, 32);
   both.pauseRecv().pauseSend();
@@ -113,6 +120,7 @@ const watchdog = setTimeout(() => { throw new Error('required integration timed 
 
   // Collect a genuinely unclosed native wrapper with an active watcher.
   // Public wrappers have bound JS listener cycles; no timing claim about those.
+  phase = 'gc';
   const before = addon.state();
   let abandonedDescriptor, gcCloseEvents = 0;
   function abandon() {
