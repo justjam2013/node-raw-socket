@@ -724,7 +724,15 @@ NAN_METHOD(SocketWrap::Recv) {
 	}
 	
 	if (received == SOCKET_ERROR) {
-		Nan::ThrowError(raw_strerror (SOCKET_ERRNO));
+		const int error = SOCKET_ERRNO;
+		// Readiness is advisory; another receive attempt may find no packet.
+#ifdef _WIN32
+		if (error == WSAEWOULDBLOCK)
+#else
+		if (error == EAGAIN || error == EWOULDBLOCK)
+#endif
+			return;
+		Nan::ThrowError(raw_strerror (error));
 		return;
 	}
 	
