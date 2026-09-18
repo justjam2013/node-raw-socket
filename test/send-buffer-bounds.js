@@ -7,7 +7,7 @@ try {
 } catch (error) {
 	/* Construction itself opens a socket; Send validation cannot avoid this. */
 	if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-		console.log("SKIP send buffer bounds: socket construction requires privileges");
+		console.log("SKIP optional privileged raw-socket: send buffer bounds: socket construction requires privileges");
 		process.exit(0);
 	}
 	throw error;

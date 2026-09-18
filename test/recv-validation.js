@@ -63,7 +63,7 @@ console.log("Recv length boundaries (Windows and POSIX) and formatting guards pa
 			protocol: version === 4 ? raw.Protocol.ICMP : raw.Protocol.ICMPv6});
 	} catch (error) {
 		if (/operation not permitted|permission denied|access is denied|address family not supported|protocol not supported/i.test(error.message)) {
-			console.log("SKIP IPv" + version + " native Recv arguments: " + error.message);
+			console.log("SKIP optional privileged raw-socket: IPv" + version + " native Recv arguments: " + error.message);
 			return;
 		}
 		throw error;
@@ -91,7 +91,7 @@ async function receive(version) {
 			protocol: raw.Protocol.UDP});
 	} catch (error) {
 		if (/operation not permitted|permission denied|access is denied|address family not supported|protocol not supported/i.test(error.message)) {
-			console.log("SKIP IPv" + version + " native Recv: " + error.message);
+			console.log("SKIP optional privileged raw-socket: IPv" + version + " native Recv: " + error.message);
 			return;
 		}
 		throw error;

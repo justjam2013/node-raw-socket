@@ -7,7 +7,7 @@ try {
 	socket = new native.SocketWrap(raw.Protocol.ICMP);
 } catch (error) {
 	if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-		console.log("SKIP option validation: construction requires privileges (" + error.message + ")");
+		console.log("SKIP optional privileged raw-socket: option validation: construction requires privileges (" + error.message + ")");
 		process.exit(0);
 	}
 	throw error;

@@ -6,8 +6,10 @@ try {
 	socket = raw.createSocket({protocol: raw.Protocol.ICMP});
 } catch (error) {
 	/* Raw sockets require elevated privileges on some platforms. */
-	if (/operation not permitted|permission denied|access is denied/i.test(error.message))
+	if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
+		console.log("SKIP optional privileged raw-socket: getOption: " + error.message);
 		process.exit(0);
+	}
 	throw error;
 }
 

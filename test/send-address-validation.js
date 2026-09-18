@@ -65,7 +65,7 @@ var raw = require("..");
 				: {addressFamily: family, protocol: raw.Protocol.ICMPv6});
 	} catch (error) {
 		if (/operation not permitted|permission denied|access is denied/i.test(error.message)) {
-			console.log("SKIP IPv" + version + " native address validation: construction requires privileges ("
+			console.log("SKIP optional privileged raw-socket: IPv" + version + " native address validation: construction requires privileges ("
 					+ error.message + ")");
 			return;
 		}
