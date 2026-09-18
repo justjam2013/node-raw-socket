@@ -21,8 +21,25 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false
 
+      # Require an exact v<package.json version> tag before installing/building.
+      - name: Validate release version and channel
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_PRERELEASE: ${{ toJSON(github.event.release.prerelease) }}
+        run: node .github/scripts/validate-release.cjs
+
+      - run: node --test test/release-validation.cjs
       - run: npm install --package-lock=false
       - run: npm run build
       - run: npm test
 
-      - run: npm publish --access public
+      - name: Publish to npm
+        env:
+          NPM_DIST_TAG: ${{ steps.release.outputs.dist_tag }}
+        run: |
+          if [ -n "$NPM_DIST_TAG" ]; then
+            npm publish --access public --tag "$NPM_DIST_TAG"
+          else
+            npm publish --access public
+          fi
